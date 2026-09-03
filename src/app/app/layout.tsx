@@ -6,7 +6,6 @@ import { AppShell } from "@/features/agents/app-shell";
 import {
   listWorkspaces,
   countPendingApprovals,
-  getWorkspaceById,
 } from "@/server/mock-runtime/store";
 
 const inter = Inter({
@@ -22,9 +21,11 @@ export const metadata: Metadata = {
 };
 
 /**
- * Product shell layout. .cmo-app owns theme tokens; no marketing code can
- * bleed in here. Per code-standards.md and ui-tokens.md. The shell is
- * server-rendered; per-route data fetching lives in route pages.
+ * Product shell layout. Renders ONCE for every /app/* route. Nested
+ * workspace layouts must NOT wrap the shell again — they validate the
+ * workspaceId and render `{children}` only. The shell's active workspace
+ * is derived from useParams() inside AppShell so it stays in sync with
+ * the URL on every navigation.
  */
 export default async function AppLayout({
   children,
@@ -32,29 +33,18 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const workspaces = listWorkspaces();
-  const first = workspaces[0];
-  // Compute workspace name + pending count for the top bar/sidebar using
-  // the first workspace. Routes with their own workspaceId override the
-  // top bar context via AppShell context prop.
-  const initialName = first?.name ?? "No brand";
-  const initialPending = first ? countPendingApprovals(first.id) : 0;
-  const initialWorkspaceId = first?.id;
+  const pendingCounts: Record<string, number> = {};
+  for (const w of workspaces) {
+    pendingCounts[w.id] = countPendingApprovals(w.id);
+  }
 
   return (
     <div className={`${inter.variable} cmo-app`} data-theme="dark">
       <ThemeProvider>
-        <AppShell
-          workspaces={workspaces}
-          activeWorkspaceId={initialWorkspaceId}
-          pendingApprovalCount={initialPending}
-          workspaceName={initialName}
-        >
+        <AppShell workspaces={workspaces} pendingCounts={pendingCounts}>
           {children}
         </AppShell>
       </ThemeProvider>
     </div>
   );
 }
-
-// Hint to TS that getWorkspaceById is used at the route layer
-export const __workspaceHelper = getWorkspaceById;

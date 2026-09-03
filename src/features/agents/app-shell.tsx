@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import {
   Bot,
   Brain,
@@ -33,6 +33,10 @@ import type { BrandWorkspace } from "@/contracts/types";
  * Application shell. 280px desktop sidebar, 56px top bar, mobile drawer.
  * Per ui-rules.md: desktop uses labelled sidebar (no dock), drawer on
  * narrow viewports. ThemeSelector + Simulation label live in the top bar.
+ *
+ * The shell reads the active workspaceId from useParams() so it stays in
+ * sync with the URL on every navigation. The root /app layout renders this
+ * shell exactly once; nested workspace layouts must NOT wrap with it again.
  */
 
 const AGENT_ICONS: Record<string, React.ElementType> = {
@@ -47,19 +51,17 @@ const AGENT_ICONS: Record<string, React.ElementType> = {
 interface AppShellProps {
   children: React.ReactNode;
   workspaces: BrandWorkspace[];
-  activeWorkspaceId?: string;
-  pendingApprovalCount?: number;
-  workspaceName: string;
+  pendingCounts: Record<string, number>;
 }
 
-function AppShell({
-  children,
-  workspaces,
-  activeWorkspaceId,
-  pendingApprovalCount = 0,
-  workspaceName,
-}: AppShellProps) {
+function AppShell({ children, workspaces, pendingCounts }: AppShellProps) {
   const pathname = usePathname() ?? "";
+  const params = useParams<{ workspaceId?: string }>();
+  const firstId = workspaces[0]?.id;
+  const activeWorkspaceId = params.workspaceId ?? firstId ?? "";
+  const active = workspaces.find((w) => w.id === activeWorkspaceId);
+  const workspaceName = active?.name ?? "No brand";
+  const pendingApprovalCount = pendingCounts[activeWorkspaceId] ?? 0;
 
   return (
     <div className="cmo-app flex min-h-dvh w-full">
@@ -117,11 +119,11 @@ function SidebarContent({
 }: {
   pathname: string;
   workspaces: BrandWorkspace[];
-  activeWorkspaceId?: string;
+  activeWorkspaceId: string;
   pendingApprovalCount: number;
   workspaceName: string;
 }) {
-  const workspaceId = activeWorkspaceId ?? workspaces[0]?.id ?? "";
+  const workspaceId = activeWorkspaceId || workspaces[0]?.id || "";
 
   return (
     <>
@@ -145,8 +147,12 @@ function SidebarContent({
           {AGENT_ORDER.map((key) => {
             const def = AGENT_CATALOG[key]!;
             const Icon = AGENT_ICONS[key] ?? Bot;
-            const href = `/app/${workspaceId}/chat/${key}` as Route;
-            const isActive = pathname.startsWith(href);
+            const href =
+              workspaceId === ""
+                ? ("/" as Route)
+                : (`/app/${workspaceId}/chat/${key}` as Route);
+            const isActive =
+              workspaceId !== "" && pathname.startsWith(href);
             return (
               <li key={key}>
                 <Link
@@ -172,15 +178,21 @@ function SidebarContent({
         <ul className="flex flex-col gap-0.5">
           <li>
             <Link
-              href={`/app/${workspaceId}/campaigns`}
+              href={
+                workspaceId === ""
+                  ? ("/" as Route)
+                  : (`/app/${workspaceId}/campaigns` as Route)
+              }
               aria-current={
+                workspaceId !== "" &&
                 pathname.startsWith(`/app/${workspaceId}/campaigns`)
                   ? "page"
                   : undefined
               }
               className={cn(
                 "flex h-10 items-center gap-2 rounded-md px-2 text-sm text-app-ink hover:bg-app-surface-subtle",
-                pathname.startsWith(`/app/${workspaceId}/campaigns`) &&
+                workspaceId !== "" &&
+                  pathname.startsWith(`/app/${workspaceId}/campaigns`) &&
                   "bg-app-surface-subtle text-app-ink",
               )}
             >
@@ -195,15 +207,21 @@ function SidebarContent({
           </li>
           <li>
             <Link
-              href={`/app/${workspaceId}/memory`}
+              href={
+                workspaceId === ""
+                  ? ("/" as Route)
+                  : (`/app/${workspaceId}/memory` as Route)
+              }
               aria-current={
+                workspaceId !== "" &&
                 pathname.startsWith(`/app/${workspaceId}/memory`)
                   ? "page"
                   : undefined
               }
               className={cn(
                 "flex h-10 items-center gap-2 rounded-md px-2 text-sm text-app-ink hover:bg-app-surface-subtle",
-                pathname.startsWith(`/app/${workspaceId}/memory`) &&
+                workspaceId !== "" &&
+                  pathname.startsWith(`/app/${workspaceId}/memory`) &&
                   "bg-app-surface-subtle text-app-ink",
               )}
             >
@@ -213,15 +231,21 @@ function SidebarContent({
           </li>
           <li>
             <Link
-              href={`/app/${workspaceId}/settings`}
+              href={
+                workspaceId === ""
+                  ? ("/" as Route)
+                  : (`/app/${workspaceId}/settings` as Route)
+              }
               aria-current={
+                workspaceId !== "" &&
                 pathname.startsWith(`/app/${workspaceId}/settings`)
                   ? "page"
                   : undefined
               }
               className={cn(
                 "flex h-10 items-center gap-2 rounded-md px-2 text-sm text-app-ink hover:bg-app-surface-subtle",
-                pathname.startsWith(`/app/${workspaceId}/settings`) &&
+                workspaceId !== "" &&
+                  pathname.startsWith(`/app/${workspaceId}/settings`) &&
                   "bg-app-surface-subtle text-app-ink",
               )}
             >
@@ -252,7 +276,7 @@ function MobileNav({
 }: {
   pathname: string;
   workspaces: BrandWorkspace[];
-  activeWorkspaceId?: string;
+  activeWorkspaceId: string;
   pendingApprovalCount: number;
   workspaceName: string;
 }) {
