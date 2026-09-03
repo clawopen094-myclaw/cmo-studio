@@ -32,6 +32,8 @@ import type {
   Message,
 } from "@/contracts/types";
 
+import type { OutboxEntry } from "./outbox";
+
 interface MutableStore {
   workspaces: BrandWorkspace[];
   profiles: BrandProfile[];
@@ -43,6 +45,7 @@ interface MutableStore {
   artifacts: Artifact[];
   approvals: ApprovalRequest[];
   memory: MemoryRecord[];
+  outbox: OutboxEntry[];
 }
 
 export const store: MutableStore = {
@@ -56,4 +59,5 @@ export const store: MutableStore = {
   artifacts: [...ARTIFACTS],
   approvals: [...APPROVALS],
   memory: [...ALL_MEMORY],
+  outbox: [],
 };

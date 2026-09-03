@@ -542,6 +542,9 @@ export const CAMPAIGN_TASKS: CampaignTask[] = [
   {
     id: "tsk_atelier_research",
     campaignId: "cmp_atelier_autumn",
+    customerId: "cust_root",
+    brandWorkspaceId: "ws_atelier",
+    createdAt: "2026-09-01T10:00:00.000Z",
     templateTaskKey: "audience_research",
     revisionIndex: 0,
     isCurrent: true,
@@ -559,6 +562,9 @@ export const CAMPAIGN_TASKS: CampaignTask[] = [
   {
     id: "tsk_atelier_strategy",
     campaignId: "cmp_atelier_autumn",
+    customerId: "cust_root",
+    brandWorkspaceId: "ws_atelier",
+    createdAt: "2026-09-01T10:00:00.000Z",
     templateTaskKey: "brand_strategy",
     revisionIndex: 0,
     isCurrent: true,
@@ -575,6 +581,9 @@ export const CAMPAIGN_TASKS: CampaignTask[] = [
   {
     id: "tsk_atelier_creative_v1",
     campaignId: "cmp_atelier_autumn",
+    customerId: "cust_root",
+    brandWorkspaceId: "ws_atelier",
+    createdAt: "2026-09-01T10:00:00.000Z",
     templateTaskKey: "creative_package",
     revisionIndex: 0,
     isCurrent: false,
@@ -591,6 +600,9 @@ export const CAMPAIGN_TASKS: CampaignTask[] = [
   {
     id: "tsk_atelier_creative_v2",
     campaignId: "cmp_atelier_autumn",
+    customerId: "cust_root",
+    brandWorkspaceId: "ws_atelier",
+    createdAt: "2026-09-01T10:00:00.000Z",
     templateTaskKey: "creative_package",
     revisionIndex: 1,
     isCurrent: true,
@@ -607,6 +619,9 @@ export const CAMPAIGN_TASKS: CampaignTask[] = [
   {
     id: "tsk_atelier_production_v1",
     campaignId: "cmp_atelier_autumn",
+    customerId: "cust_root",
+    brandWorkspaceId: "ws_atelier",
+    createdAt: "2026-09-01T10:00:00.000Z",
     templateTaskKey: "simulated_production",
     revisionIndex: 0,
     isCurrent: false,
@@ -622,6 +637,9 @@ export const CAMPAIGN_TASKS: CampaignTask[] = [
   {
     id: "tsk_atelier_production_v2",
     campaignId: "cmp_atelier_autumn",
+    customerId: "cust_root",
+    brandWorkspaceId: "ws_atelier",
+    createdAt: "2026-09-01T10:00:00.000Z",
     templateTaskKey: "simulated_production",
     revisionIndex: 1,
     isCurrent: true,
@@ -638,6 +656,9 @@ export const CAMPAIGN_TASKS: CampaignTask[] = [
   {
     id: "tsk_atelier_qa",
     campaignId: "cmp_atelier_autumn",
+    customerId: "cust_root",
+    brandWorkspaceId: "ws_atelier",
+    createdAt: "2026-09-01T10:00:00.000Z",
     templateTaskKey: "creative_qa",
     revisionIndex: 0,
     isCurrent: true,
@@ -654,6 +675,9 @@ export const CAMPAIGN_TASKS: CampaignTask[] = [
   {
     id: "tsk_atelier_final",
     campaignId: "cmp_atelier_autumn",
+    customerId: "cust_root",
+    brandWorkspaceId: "ws_atelier",
+    createdAt: "2026-09-01T10:00:00.000Z",
     templateTaskKey: "final_report",
     revisionIndex: 0,
     isCurrent: true,

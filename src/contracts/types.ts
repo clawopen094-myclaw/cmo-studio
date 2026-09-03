@@ -107,6 +107,8 @@ export type TaskStatus =
 
 export interface CampaignTask {
   id: Id;
+  customerId: Id;
+  brandWorkspaceId: Id;
   campaignId: Id;
   templateTaskKey: TaskType;
   revisionIndex: number;
@@ -121,6 +123,9 @@ export interface CampaignTask {
   maxAttempts: number;
   resultSummary?: string;
   artifactIds: Id[];
+  inputManifest?: Record<string, unknown>;
+  openhandsConversationId?: string;
+  createdAt: string;
 }
 
 // --- Campaigns ---------------------------------------------------------------
@@ -246,6 +251,7 @@ export interface Handoff {
   safeContextSummary: string;
   status: HandoffStatus;
   campaignId?: Id;
+  idempotencyKey?: string;
   createdAt: string;
 }
 
@@ -365,6 +371,12 @@ export interface AgentRun {
   attemptNumber: number;
   status: AgentRunStatus;
   availableAt: string;
+  leaseOwner?: string;
+  leaseToken?: string;
+  leaseExpiresAt?: string;
+  resolvedConfigJson?: Record<string, unknown>;
+  configDigest?: string;
+  errorSummary?: string;
   createdAt: string;
   resolvedAt?: string;
 }

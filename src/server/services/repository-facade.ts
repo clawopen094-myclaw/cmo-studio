@@ -152,6 +152,8 @@ export const repositories: Repositories = {
   approvals: {
     listApprovals: (campaignId) =>
       store.approvals.filter((a) => a.campaignId === campaignId),
+    getApproval: (approvalId) =>
+      store.approvals.find((a) => a.id === approvalId),
     resolveApproval: (input) => {
       const a = store.approvals.find((x) => x.id === input.approvalId);
       if (!a) return undefined;

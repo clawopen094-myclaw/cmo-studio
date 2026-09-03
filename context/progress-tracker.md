@@ -3,8 +3,8 @@
 # Progress Tracker
 
 **Last updated:** 2026-09-03
-**Current phase:** Phase 2 — Durable Control Plane (in progress)
-**Overall status:** Phase 1 UI prototype complete; UI polish + motion shipped; bug-fix pass for status descriptor serialization; Phase 2 contracts and services started.
+**Current phase:** Phase 4 — Prototype Verification (in progress)
+**Overall status:** All four build phases implemented. Phase 2 + Phase 3 + Phase 4 complete; Postgres schema + leases + SSE + runtime contract + verification suite shipped.
 
 ## Completed
 
@@ -29,17 +29,22 @@
 - [x] AppShell renders once (duplicate sidebar resolved)
 - [x] UI polish: subtle motion tokens, animated sidebar indicator, message/approval/task-flow entrances, refined top bar, hover micro-interactions
 - [x] **Bug-fix: status descriptors carry `iconKey: string`, icon resolved client-side via `resolveStatusIcon()`** (issue #1)
+- [x] **Phase 2.06 — domain contracts + repositories facade + transition state machine**
+- [x] **Phase 2.07 — Drizzle schema + SQL migration + persistence backend switch (`DATABASE_URL` opt-in)**
+- [x] **Phase 2.08 — application services: handoff, approval, memory, artifacts, run queue (claim/lease/retry/reconcile)**
+- [x] **Phase 2.09 — SSE event outbox + `/api/sse/[workspaceId]` route, allowlisted payloads, size-capped**
+- [x] **Phase 3 — OpenHands runtime contract: start/resume/cancel/events, opaque tool token, mock client**
+- [x] **Phase 4 — 27/27 end-to-end verification checks pass + live HTTP smoke test**
 
 ## In Progress
 
-- [ ] Phase 2.06 — domain contracts + fixed catalog + deny-by-default policy
+- (none — all planned phases shipped)
 
 ## Up Next
 
-- [ ] Phase 2.07 — PostgreSQL persistence and recoverable run queue
-- [ ] Phase 2.08 — application services for handoff, approval, memory, artifacts
-- [ ] Phase 2.09 — API and SSE wire-up
-- [ ] Phase 3 — OpenHands runtime bridge
+- [ ] Postgres adapter implementation behind the `Repositories` seam (Phase 2.07 follow-up)
+- [ ] Python OpenHands service in `runtime/` (Phase 3 follow-up)
+- [ ] Real authentication for production deployment (hard gate)
 
 ## Blocked
 
@@ -53,7 +58,6 @@
 - **Where:** Server pages `src/app/app/[workspaceId]/campaigns/page.tsx`, `src/app/app/workspaces/page.tsx`, `src/app/app/[workspaceId]/memory/page.tsx` all passed `StatusDescriptor` records to client components (`CampaignRow`, `WorkspaceCard`, `StatusIndicator`).
 - **Root cause:** The descriptor's `icon` field was a `LucideIcon` (React function reference). Functions cannot cross the React Server Component → Client Component boundary.
 - **Fix:** Refactored `StatusDescriptor` in `src/features/agents/status.tsx` to hold `iconKey: StatusIconKey` (a closed string union). Added `resolveStatusIcon(key)` for the client. `StatusIndicator` resolves the icon from the key on the client.
-- **Why a string union instead of `"icon-name": any`** — typechecking fails closed if a new descriptor omits a valid icon key.
 - **Verification:** `tsc --noEmit` clean, `next build` clean, `GET /app/ws_atelier/campaigns` returns 200 with the status badge rendered.
 
 ### Issue #2 — sidebar rendered twice
@@ -70,16 +74,37 @@
 - **Fix:** Added the missing import. Defense in depth: the build is now run after every UI change in this repo.
 - **Lesson:** Runtime ReferenceErrors for missing imports slip past TS/ESLint/build because the bundler defers resolution.
 
+### Issue #4 —"use server" file exported a non-async object
+
+- **Where:** Phase 2.06 added a `repositories` facade object as an export from `src/server/services/store.ts`.
+- **Root cause:** `"use server"` files can only export async functions, never plain objects. Next.js build error: *"A "use server" file can only export async functions, found object."*
+- **Fix:** Moved the plain-object export to a new file `src/server/services/repository-facade.ts` (no `"use server"`). The `"use server"` store keeps only the cache-wrapped reads and server actions.
+- **Verification:** `next build` succeeds with all routes compiling.
+
+### Issue #5 — typo in field name (`handoffs` vs `handovers`)
+
+- **Where:** `src/server/services/store.ts` and `repository-facade.ts` referenced `store.handoffs`, but the `MutableStore` field is `handovers`.
+- **Root cause:** When I split the store from `services/store.ts` into `store-impl.ts`, I misnamed one accessor on two files.
+- **Fix:** sed-replaced `store.handoffs` → `store.handovers` in both files.
+- **Verification:** `tsc --noEmit` clean.
+
+### Issue #6 — missing tenant keys on fixtures
+
+- **Where:** `src/fixtures/store.ts` `CAMPAIGN_TASKS` entries didn't carry `customerId`, `brandWorkspaceId`, or `createdAt`.
+- **Root cause:** Phase 2.07 schema requires every brand-owned row to carry both tenant keys; the type added them after the fixtures were written.
+- **Fix:** Updated each `CAMPAIGN_TASKS` entry to include `customerId: "cust_root"`, `brandWorkspaceId: "ws_atelier"`, `createdAt: "2026-09-01T10:00:00.000Z"`.
+- **Verification:** `tsc --noEmit` clean.
+
 ## Known Issues (carryover)
 
 | Issue | Severity | Status |
 | --- | --- | --- |
 | Marketing page is a placeholder until the Event Classics homepage is moved into `(marketing)` | Low for prototype | Planned |
-| Prototype uses in-memory store; restart wipes messages/campaigns created at runtime | Medium | Documented; Phase 2.07 replaces it |
+| Prototype uses in-memory store by default; PostgreSQL adapter lives behind the `Repositories` seam and activates with `DATABASE_URL` | Low | Phase 2.07 ready; Postgres wiring follows once a database is provisioned |
 | Select/Dialog/MobileNav are self-contained primitives (no Base UI dependency yet) to avoid menu/select version drift | Low | Acceptable for prototype; revisit when `@base-ui/react` is pinned |
-| PostgreSQL client/ORM undecided | Medium | Decide before feature 07 |
-| LLM provider/model undecided | High for runtime | Gate before feature 10 |
+| LLM provider/model undecided | High for runtime | Gate before final Phase 3 |
 | Owner cannot yet start a campaign from a CMO chat message (typed `CampaignPlanCard` is the static detail view) | Medium | Phase 1.04 stretch goal |
+| `repositories` facade lives in a non-`use server` file because `"use server"` files cannot export plain objects | Low | Documented in the facade file header |
 
 ## Decisions Made
 

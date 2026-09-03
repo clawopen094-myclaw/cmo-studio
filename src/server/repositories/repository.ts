@@ -78,6 +78,7 @@ export interface CampaignRepository {
 
 export interface ApprovalRepository {
   listApprovals(campaignId: Id): ApprovalRequest[];
+  getApproval(approvalId: Id): ApprovalRequest | undefined;
   resolveApproval(input: {
     approvalId: Id;
     outcome: "approved" | "changes_requested";
