@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import {
   Bot,
@@ -113,7 +114,6 @@ function SidebarContent({
   workspaces,
   activeWorkspaceId,
   pendingApprovalCount,
-  workspaceName,
 }: {
   pathname: string;
   workspaces: BrandWorkspace[];
@@ -145,7 +145,7 @@ function SidebarContent({
           {AGENT_ORDER.map((key) => {
             const def = AGENT_CATALOG[key]!;
             const Icon = AGENT_ICONS[key] ?? Bot;
-            const href = `/app/${workspaceId}/chat/${key}`;
+            const href = `/app/${workspaceId}/chat/${key}` as Route;
             const isActive = pathname.startsWith(href);
             return (
               <li key={key}>

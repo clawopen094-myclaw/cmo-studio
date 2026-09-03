@@ -36,7 +36,7 @@ export function overLimit(
   if (Array.isArray(value)) {
     if (limit.entries !== undefined && value.length > limit.entries) return true;
     if (limit.each !== undefined) {
-      return value.some((v) => v.length > limit.each);
+      return value.some((v) => v.length > (limit.each as number));
     }
     return false;
   }

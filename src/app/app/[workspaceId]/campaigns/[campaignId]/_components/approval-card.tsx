@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, AlertTriangle, X } from "lucide-react";
+import { ShieldCheck, AlertTriangle } from "lucide-react";
 
 import type { ApprovalRequest, Id } from "@/contracts/types";
 import { APPROVAL_STATUS } from "@/features/agents/status";
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
-import { ConfirmDialog } from "@/components/ui/dialog";
 import { resolveApprovalAction } from "@/server/mock-runtime/store";
 import { listArtifactsForWorkspace } from "@/server/mock-runtime/store";
 
@@ -156,6 +155,3 @@ function ApprovalCard({
 }
 
 export { ApprovalCard };
-
-// Silence unused import warnings.
-void X;

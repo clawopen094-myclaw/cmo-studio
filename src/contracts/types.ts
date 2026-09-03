@@ -111,6 +111,7 @@ export interface CampaignTask {
   templateTaskKey: TaskType;
   revisionIndex: number;
   isCurrent: boolean;
+  supersedesTaskId?: Id;
   assignedAgentInstanceId: Id;
   assignedAgentKey: AgentKey;
   status: TaskStatus;

@@ -11,7 +11,6 @@ import { StatusIndicator } from "@/components/ui/status-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Button } from "@/components/ui/button";
 import { formatRelative } from "@/lib/utils";
 
 interface Params {

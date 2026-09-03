@@ -12,10 +12,9 @@ import { Badge } from "@/components/ui/badge";
  */
 function CampaignTaskFlow({
   tasks,
-  workspaceId,
 }: {
   tasks: CampaignTask[];
-  workspaceId: Id;
+  workspaceId?: Id;
 }) {
   const byKey = new Map<string, CampaignTask[]>();
   for (const t of tasks) {

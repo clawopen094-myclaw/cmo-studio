@@ -12,7 +12,6 @@ import {
 import { CAMPAIGN_STATUS } from "@/features/agents/status";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 

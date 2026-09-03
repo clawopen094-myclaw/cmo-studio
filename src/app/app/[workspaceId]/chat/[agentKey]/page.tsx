@@ -5,7 +5,6 @@ import {
   getThreadByAgent,
   listMessagesForThread,
   listHandoffsForWorkspace,
-  getWorkspaceProfile,
 } from "@/server/mock-runtime/store";
 import { AGENT_CATALOG } from "@/server/catalog/agents";
 import type { AgentKey } from "@/contracts/types";
@@ -44,7 +43,6 @@ export default async function ChatPage({
       (agentKey !== "ai_cmo" &&
         h.targetCmoInstanceId === `ai_${workspaceId}_ai_cmo`),
   );
-  const profile = getWorkspaceProfile(workspaceId);
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-3.5rem)] w-full max-w-5xl flex-col px-4 py-4">
@@ -53,7 +51,6 @@ export default async function ChatPage({
         role={def.role}
         canDo={def.canDo}
         mustNotDo={def.mustNotDo}
-        workspaceName={profile ? undefined : workspace.name}
       />
       <ChatPanel
         workspaceId={workspaceId}

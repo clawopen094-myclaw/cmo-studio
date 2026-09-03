@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { usePathname, useParams } from "next/navigation";
 import { ChevronsUpDown, Plus } from "lucide-react";
 
@@ -112,11 +113,11 @@ function WorkspaceSwitcher({
               const href =
                 pathname.includes("/chat") && isActive
                   ? pathname
-                  : `/app/${w.id}/chat/ai_cmo`;
+                  : (`/app/${w.id}/chat/ai_cmo` as Route);
               return (
                 <Link
                   key={w.id}
-                  href={href}
+                  href={href as Route}
                   role="menuitem"
                   onClick={() => pop.setOpen(false)}
                   className={cn(

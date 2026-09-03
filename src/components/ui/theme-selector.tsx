@@ -3,6 +3,8 @@
 import * as React from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+
 type ThemePreference = "dark" | "light" | "system";
 
 const STORAGE_KEY = "cmo-studio-theme";

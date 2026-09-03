@@ -22,6 +22,7 @@ function AgentHeader({
   role: string;
   canDo: string[];
   mustNotDo: string[];
+  workspaceName?: string;
 }) {
   const [expanded, setExpanded] = React.useState(false);
 

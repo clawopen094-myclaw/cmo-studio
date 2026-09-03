@@ -47,6 +47,8 @@ interface StatusDescriptor {
   announce: boolean;
 }
 
+export type { StatusDescriptor };
+
 const TONE_BG: Record<Tone, string> = {
   neutral: "bg-app-surface-subtle text-app-ink",
   info: "bg-app-info-soft text-app-info",

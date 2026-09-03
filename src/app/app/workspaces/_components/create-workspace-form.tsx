@@ -111,7 +111,7 @@ export function CreateWorkspaceForm() {
         defaultApprovalMode: state.defaultApprovalMode,
       });
       router.push(`/app/${workspaceId}/chat/ai_cmo`);
-    } catch (err) {
+    } catch (_err) {
       setTopError("Could not create the workspace. Please try again.");
       setSubmitting(false);
     }

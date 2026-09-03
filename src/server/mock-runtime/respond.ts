@@ -52,7 +52,7 @@ const TEMPLATES: Record<
     },
   ],
 
-  audience_researcher: ({ messageText }) => [
+  audience_researcher: () => [
     {
       kind: "text",
       body:
