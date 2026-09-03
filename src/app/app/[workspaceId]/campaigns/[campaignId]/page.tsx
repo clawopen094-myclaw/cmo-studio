@@ -110,6 +110,14 @@ export default async function CampaignDetailPage({
             <ApprovalCard
               approval={pendingApproval}
               workspaceId={workspaceId}
+              subjects={pendingApproval.subjects
+                .map((s) => {
+                  const artifact = artifacts.find(
+                    (a) => a.id === s.artifactId,
+                  );
+                  return artifact ? { ...s, artifact } : null;
+                })
+                .filter((x): x is NonNullable<typeof x> => x !== null)}
             />
           ) : null}
 

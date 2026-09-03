@@ -95,6 +95,13 @@
 - **Fix:** Updated each `CAMPAIGN_TASKS` entry to include `customerId: "cust_root"`, `brandWorkspaceId: "ws_atelier"`, `createdAt: "2026-09-01T10:00:00.000Z"`.
 - **Verification:** `tsc --noEmit` clean.
 
+### Issue #7 — client component calling a server function during render
+
+- **Where:** `GET /app/ws_atelier/campaigns/cmp_atelier_autumn` returned 500. The dev log showed `Server Functions cannot be called during initial render. This would create a fetch waterfall. Try to use a Server Component to pass data to Client Components instead.`
+- **Root cause:** `ApprovalCard` is a `"use client"` component that called `listArtifactsForWorkspace(workspaceId)` directly inside its body. The function is a server-side cached read; a client component cannot call it during render — the data must be resolved in the server page and passed down as plain props.
+- **Fix:** Moved the subject→artifact resolution into `campaigns/[campaignId]/page.tsx` (server component) and pass the resolved `subjects: Array<ApprovalSubject & { artifact }>` into `ApprovalCard` as a plain prop. Also fixed `resolveApprovalAction → resolveApproval` (the service exports `resolveApproval`, the legacy `resolveApprovalAction` is still in `store.ts` for backward compat).
+- **Verification:** `GET /app/ws_atelier/campaigns/cmp_atelier_autumn` now returns 200; all 14 HTTP smoke routes return expected codes; no runtime errors.
+
 ## Known Issues (carryover)
 
 | Issue | Severity | Status |

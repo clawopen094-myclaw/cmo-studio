@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CheckCircle2, MessageSquareWarning, ShieldCheck } from "lucide-react";
 
-import type { ApprovalRequest, Id } from "@/contracts/types";
+import type {
+  ApprovalRequest,
+  ApprovalSubject,
+  Artifact,
+  Id,
+} from "@/contracts/types";
 import { APPROVAL_STATUS } from "@/features/agents/status";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
-import { resolveApprovalAction } from "@/server/mock-runtime/store";
-import { listArtifactsForWorkspace } from "@/server/mock-runtime/store";
+import { resolveApproval } from "@/server/services/approval";
 import { transitions } from "@/lib/motion";
 
 /**
@@ -22,14 +26,20 @@ import { transitions } from "@/lib/motion";
  * being reviewed. Manual: Approve / Request changes (feedback required).
  * Auto: read-only history. Subject artifacts remain inspectable.
  *
+ * The server page resolves subject artifacts and passes them down as
+ * plain props so the client component never reaches into a server
+ * function during initial render.
+ *
  * Motion: the request-changes feedback panel slides in/out. The approve
  * button confirms with a brief check-mark morph.
  */
 function ApprovalCard({
   approval,
+  subjects,
   workspaceId,
 }: {
   approval: ApprovalRequest;
+  subjects: Array<ApprovalSubject & { artifact: Artifact }>;
   workspaceId: Id;
 }) {
   const router = useRouter();
@@ -41,24 +51,18 @@ function ApprovalCard({
   const [submitting, setSubmitting] = React.useState(false);
   const [justApproved, setJustApproved] = React.useState(false);
 
-  const artifacts = listArtifactsForWorkspace(workspaceId);
-  const subjects = approval.subjects
-    .map((s) => {
-      const artifact = artifacts.find((a) => a.id === s.artifactId);
-      return artifact ? { ...s, artifact } : null;
-    })
-    .filter((x): x is NonNullable<typeof x> => x !== null);
-
   async function decide(outcome: "approved" | "changes_requested") {
     if (outcome === "changes_requested" && !feedback.trim()) {
       return;
     }
     setSubmitting(true);
     try {
-      await resolveApprovalAction({
+      await resolveApproval({
+        brandWorkspaceId: workspaceId,
         approvalId: approval.id,
         outcome,
         feedback: outcome === "changes_requested" ? feedback.trim() : undefined,
+        decidedByUserId: "user_owner",
       });
       setDecisionMode("idle");
       if (outcome === "approved") {
