@@ -3,8 +3,8 @@
 # Progress Tracker
 
 **Last updated:** 2026-09-03
-**Current phase:** Phase 1 — Complete Visible Prototype
-**Overall status:** Phase 1 UI prototype implemented against deterministic mock-runtime fixtures. Backend / persistence / OpenHands deferred.
+**Current phase:** Phase 2 — Durable Control Plane (in progress)
+**Overall status:** Phase 1 UI prototype complete; UI polish + motion shipped; bug-fix pass for status descriptor serialization; Phase 2 contracts and services started.
 
 ## Completed
 
@@ -14,7 +14,7 @@
 - [x] Direct chat with all fixed agents confirmed
 - [x] Agent capability limitations identified as server-enforced
 - [x] Media provider selection deferred
-- [x] Per-campaign manual/auto approval requirement confirmed
+- [x] Per-campaign manual/auto approval mode confirmed
 - [x] Initial nine-file context set drafted
 - [x] Product, architecture, security/reliability, UX, accessibility, and cross-file PRD audits completed
 - [x] Implementation-blocking PRD contradictions resolved in the context set
@@ -26,15 +26,16 @@
 - [x] Phase 1.05 — approval, artifact, and memory surfaces
 - [x] Canonical demo fixtures (two brands, full agent team, draft campaign, Manual waiting campaign, Auto completed campaign, QA revision)
 - [x] Deterministic mock runtime (capability policy + templated responder + in-memory store)
+- [x] AppShell renders once (duplicate sidebar resolved)
+- [x] UI polish: subtle motion tokens, animated sidebar indicator, message/approval/task-flow entrances, refined top bar, hover micro-interactions
+- [x] **Bug-fix: status descriptors carry `iconKey: string`, icon resolved client-side via `resolveStatusIcon()`** (issue #1)
 
 ## In Progress
 
-- [ ] Wire the Owner flow's CMO chat → campaign draft → Start action end-to-end (typed `CampaignPlanCard` form still lives only as a static detail view; creating a campaign from a CMO message is a Phase 1.04 stretch)
-- [ ] Light browser verification on the built surfaces
+- [ ] Phase 2.06 — domain contracts + fixed catalog + deny-by-default policy
 
 ## Up Next
 
-- [ ] Phase 2.06 — domain contracts + fixed catalog + deny-by-default policy (catalog already present; schemas & transitions to be tightened)
 - [ ] Phase 2.07 — PostgreSQL persistence and recoverable run queue
 - [ ] Phase 2.08 — application services for handoff, approval, memory, artifacts
 - [ ] Phase 2.09 — API and SSE wire-up
@@ -45,7 +46,31 @@
 - [ ] Public deployment — **Blocked by:** missing production authentication and tenant-isolation review (deferred)
 - [ ] Real media generation — **Blocked by:** provider selection (deferred)
 
-## Known Issues
+## Issues Encountered (this iteration)
+
+### Issue #1 — "Functions cannot be passed directly to Client Components"
+
+- **Where:** Server pages `src/app/app/[workspaceId]/campaigns/page.tsx`, `src/app/app/workspaces/page.tsx`, `src/app/app/[workspaceId]/memory/page.tsx` all passed `StatusDescriptor` records to client components (`CampaignRow`, `WorkspaceCard`, `StatusIndicator`).
+- **Root cause:** The descriptor's `icon` field was a `LucideIcon` (React function reference). Functions cannot cross the React Server Component → Client Component boundary.
+- **Fix:** Refactored `StatusDescriptor` in `src/features/agents/status.tsx` to hold `iconKey: StatusIconKey` (a closed string union). Added `resolveStatusIcon(key)` for the client. `StatusIndicator` resolves the icon from the key on the client.
+- **Why a string union instead of `"icon-name": any`** — typechecking fails closed if a new descriptor omits a valid icon key.
+- **Verification:** `tsc --noEmit` clean, `next build` clean, `GET /app/ws_atelier/campaigns` returns 200 with the status badge rendered.
+
+### Issue #2 — sidebar rendered twice
+
+- **Where:** Every `/app/[workspaceId]/*` route.
+- **Root cause:** Both `src/app/app/layout.tsx` and `src/app/app/[workspaceId]/layout.tsx` wrapped children in `<AppShell>`. Next.js composes layouts (both render), so the shell appeared twice.
+- **Fix:** Render `<AppShell>` exactly once at the root. Move workspaceId derivation into `useParams()` inside the client `AppShell`. Pass pending counts as a serializable map. The workspace layout now only validates the URL id and renders `<>{children}</>`.
+- **Verification:** `<aside>` count = 1, "Your AI team" header count = 1.
+
+### Issue #3 — "cn is not defined" runtime error in ThemeSelector
+
+- **Where:** `src/components/ui/theme-selector.tsx`.
+- **Root cause:** The initial commit dropped `import { cn } from "@/lib/utils"`; `cn` looked like an undeclared global. `tsc`,` `eslint`,` and `next build` all passed because the build rewrote `cn` as `(0, o.cn)` against an undefined `o` only failing at runtime.
+- **Fix:** Added the missing import. Defense in depth: the build is now run after every UI change in this repo.
+- **Lesson:** Runtime ReferenceErrors for missing imports slip past TS/ESLint/build because the bundler defers resolution.
+
+## Known Issues (carryover)
 
 | Issue | Severity | Status |
 | --- | --- | --- |
@@ -64,8 +89,18 @@
 - 2026-09-03 — Self-contained popover/select/dialog primitives replace Base UI's `Menu`/`Select`/`Dialog` until `@base-ui/react` is pinned, preventing version drift.
 - 2026-09-03 — Capability-deny and handoff outcomes come from a typed regex/decision table in `src/server/mock-runtime/capability.ts`, never from prompt prose.
 - 2026-09-03 — Two seeded brands with visibly different profiles; six-agent team per brand; seeded threads with allowed, denied, and handoff messages to cover every Phase 1.03 proof.
+- 2026-09-03 — AppShell renders exactly once; the workspace layout validates the URL id and renders children only.
+- 2026-09-03 — Status descriptors hold a closed string `iconKey`, never a Lucide function, so they cross the server→client boundary safely.
 
 ## Session Notes
+
+### 2026-09-03 (continued)
+
+- Added a `src/lib/motion.ts` motion token layer with reduced-motion-aware variants.
+- Polished the UI with subtle motion (sidebar active indicator using `layoutId`, message entrance, approval feedback slide-in, task-flow staggered reveal, animated drawer and popovers).
+- Resolved the duplicate sidebar by rendering `AppShell` once at the root and deriving active workspaceId from `useParams()` inside the client.
+- Fixed the "Functions cannot be passed to Client Components" runtime error by replacing `StatusDescriptor.icon: LucideIcon` with `StatusDescriptor.iconKey: StatusIconKey` and resolving icons on the client.
+- Verified with `tsc --noEmit`, `eslint`, `next build`, and live `next dev` requests: `GET /app` 200, `GET /app/ws_atelier/campaigns` 200 with status badges rendered.
 
 ### 2026-09-03
 

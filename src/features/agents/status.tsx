@@ -1,14 +1,17 @@
 import {
   AlertTriangle,
+  Archive,
   CheckCircle2,
   CircleDashed,
   Clock,
   Hourglass,
+  Inbox,
   Loader2,
-  type LucideIcon,
   PauseCircle,
   ShieldCheck,
+  ShieldX,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 import type {
@@ -23,12 +26,17 @@ import type {
 } from "@/contracts/types";
 
 /**
- * Typed status descriptor registry. One owner per status family. Status
- * indicators consume this registry; they never implement their own status
- * switch. Tone classes reference app-* tokens — never raw colors.
+ * Typed status descriptor registry. One owner per status family.
  *
- * Per code-standards.md and ui-tokens.md: state colors come from semantic
- * tokens, status is communicated by text + icon + tone (not color alone).
+ * IMPORTANT: `iconKey` is a string identifier, NOT a LucideIcon reference.
+ * Server components construct descriptors and pass them to client
+ * components. Lucide components are React functions and cannot cross the
+ * server→client boundary, so we keep descriptors plain-object-safe by
+ * resolving the icon inside the client-side StatusIndicator.
+ *
+ * Per code-standards.md and ui-tokens.md: state colors come from
+ * semantic tokens; status is communicated by text + icon + tone — never
+ * color alone.
  */
 
 export type Tone =
@@ -39,15 +47,48 @@ export type Tone =
   | "danger"
   | "muted";
 
-interface StatusDescriptor {
+/**
+ * The closed set of icon keys every status may use. Adding a new icon
+ * requires extending this union AND the registry below — the typecheck
+ * fails closed on a missing entry.
+ */
+export type StatusIconKey =
+  | "alert-triangle"
+  | "archive"
+  | "check-circle"
+  | "circle-dashed"
+  | "clock"
+  | "hourglass"
+  | "inbox"
+  | "loader"
+  | "pause-circle"
+  | "shield-check"
+  | "shield-x"
+  | "x-circle";
+
+/** Icon map. Lives next to the registry; not exported to call sites. */
+const STATUS_ICONS: Record<StatusIconKey, LucideIcon> = {
+  "alert-triangle": AlertTriangle,
+  archive: Archive,
+  "check-circle": CheckCircle2,
+  "circle-dashed": CircleDashed,
+  clock: Clock,
+  hourglass: Hourglass,
+  inbox: Inbox,
+  loader: Loader2,
+  "pause-circle": PauseCircle,
+  "shield-check": ShieldCheck,
+  "shield-x": ShieldX,
+  "x-circle": XCircle,
+};
+
+export interface StatusDescriptor {
   label: string;
-  icon: LucideIcon;
+  iconKey: StatusIconKey;
   tone: Tone;
   /** Whether the live region should announce transitions for this status. */
   announce: boolean;
 }
-
-export type { StatusDescriptor };
 
 const TONE_BG: Record<Tone, string> = {
   neutral: "bg-app-surface-subtle text-app-ink",
@@ -58,33 +99,53 @@ const TONE_BG: Record<Tone, string> = {
   muted: "bg-transparent text-app-ink-muted",
 };
 
+/** Resolve an icon for use inside a client component. */
+export function resolveStatusIcon(key: StatusIconKey): LucideIcon {
+  return STATUS_ICONS[key];
+}
+
 // --- Campaign status ---------------------------------------------------------
 
 export const CAMPAIGN_STATUS: Record<CampaignStatus, StatusDescriptor> = {
-  draft: { label: "Draft", icon: CircleDashed, tone: "muted", announce: false },
-  running: { label: "Running", icon: Loader2, tone: "info", announce: true },
+  draft: {
+    label: "Draft",
+    iconKey: "circle-dashed",
+    tone: "muted",
+    announce: false,
+  },
+  running: {
+    label: "Running",
+    iconKey: "loader",
+    tone: "info",
+    announce: true,
+  },
   waiting_approval: {
     label: "Waiting approval",
-    icon: Clock,
+    iconKey: "clock",
     tone: "warning",
     announce: true,
   },
   waiting_user: {
     label: "Waiting for you",
-    icon: Clock,
+    iconKey: "clock",
     tone: "warning",
     announce: true,
   },
   completed: {
     label: "Completed",
-    icon: CheckCircle2,
+    iconKey: "check-circle",
     tone: "success",
     announce: true,
   },
-  failed: { label: "Failed", icon: XCircle, tone: "danger", announce: true },
+  failed: {
+    label: "Failed",
+    iconKey: "x-circle",
+    tone: "danger",
+    announce: true,
+  },
   cancelled: {
     label: "Cancelled",
-    icon: PauseCircle,
+    iconKey: "pause-circle",
     tone: "muted",
     announce: false,
   },
@@ -93,25 +154,45 @@ export const CAMPAIGN_STATUS: Record<CampaignStatus, StatusDescriptor> = {
 // --- Task status -------------------------------------------------------------
 
 export const TASK_STATUS: Record<TaskStatus, StatusDescriptor> = {
-  pending: { label: "Pending", icon: CircleDashed, tone: "muted", announce: false },
+  pending: {
+    label: "Pending",
+    iconKey: "circle-dashed",
+    tone: "muted",
+    announce: false,
+  },
   blocked: {
     label: "Blocked",
-    icon: AlertTriangle,
+    iconKey: "alert-triangle",
     tone: "danger",
     announce: true,
   },
-  queued: { label: "Queued", icon: Hourglass, tone: "neutral", announce: false },
-  running: { label: "Running", icon: Loader2, tone: "info", announce: true },
+  queued: {
+    label: "Queued",
+    iconKey: "hourglass",
+    tone: "neutral",
+    announce: false,
+  },
+  running: {
+    label: "Running",
+    iconKey: "loader",
+    tone: "info",
+    announce: true,
+  },
   completed: {
     label: "Completed",
-    icon: CheckCircle2,
+    iconKey: "check-circle",
     tone: "success",
     announce: true,
   },
-  failed: { label: "Failed", icon: XCircle, tone: "danger", announce: true },
+  failed: {
+    label: "Failed",
+    iconKey: "x-circle",
+    tone: "danger",
+    announce: true,
+  },
   cancelled: {
     label: "Cancelled",
-    icon: PauseCircle,
+    iconKey: "pause-circle",
     tone: "muted",
     announce: false,
   },
@@ -120,30 +201,45 @@ export const TASK_STATUS: Record<TaskStatus, StatusDescriptor> = {
 // --- Agent run status --------------------------------------------------------
 
 export const RUN_STATUS: Record<AgentRunStatus, StatusDescriptor> = {
-  queued: { label: "Queued", icon: Hourglass, tone: "neutral", announce: false },
-  running: { label: "Running", icon: Loader2, tone: "info", announce: false },
+  queued: {
+    label: "Queued",
+    iconKey: "hourglass",
+    tone: "neutral",
+    announce: false,
+  },
+  running: {
+    label: "Running",
+    iconKey: "loader",
+    tone: "info",
+    announce: false,
+  },
   succeeded: {
     label: "Succeeded",
-    icon: CheckCircle2,
+    iconKey: "check-circle",
     tone: "success",
     announce: true,
   },
-  failed: { label: "Failed", icon: XCircle, tone: "danger", announce: true },
+  failed: {
+    label: "Failed",
+    iconKey: "x-circle",
+    tone: "danger",
+    announce: true,
+  },
   timed_out: {
     label: "Timed out",
-    icon: AlertTriangle,
+    iconKey: "alert-triangle",
     tone: "danger",
     announce: true,
   },
   interrupted: {
     label: "Interrupted",
-    icon: AlertTriangle,
+    iconKey: "alert-triangle",
     tone: "warning",
     announce: false,
   },
   cancelled: {
     label: "Cancelled",
-    icon: PauseCircle,
+    iconKey: "pause-circle",
     tone: "muted",
     announce: false,
   },
@@ -152,28 +248,33 @@ export const RUN_STATUS: Record<AgentRunStatus, StatusDescriptor> = {
 // --- Approval status ---------------------------------------------------------
 
 export const APPROVAL_STATUS: Record<ApprovalStatus, StatusDescriptor> = {
-  pending: { label: "Pending", icon: Clock, tone: "warning", announce: false },
+  pending: {
+    label: "Pending",
+    iconKey: "clock",
+    tone: "warning",
+    announce: false,
+  },
   approved: {
     label: "Approved",
-    icon: ShieldCheck,
+    iconKey: "shield-check",
     tone: "success",
     announce: true,
   },
   changes_requested: {
     label: "Changes requested",
-    icon: AlertTriangle,
+    iconKey: "alert-triangle",
     tone: "warning",
     announce: true,
   },
   superseded: {
     label: "Superseded",
-    icon: PauseCircle,
+    iconKey: "pause-circle",
     tone: "muted",
     announce: false,
   },
   cancelled: {
     label: "Cancelled",
-    icon: PauseCircle,
+    iconKey: "pause-circle",
     tone: "muted",
     announce: false,
   },
@@ -182,28 +283,33 @@ export const APPROVAL_STATUS: Record<ApprovalStatus, StatusDescriptor> = {
 // --- Handoff status ----------------------------------------------------------
 
 export const HANDOFF_STATUS: Record<HandoffStatus, StatusDescriptor> = {
-  pending: { label: "Pending", icon: Clock, tone: "warning", announce: false },
+  pending: {
+    label: "Pending",
+    iconKey: "clock",
+    tone: "warning",
+    announce: false,
+  },
   accepted: {
     label: "Accepted",
-    icon: CheckCircle2,
+    iconKey: "check-circle",
     tone: "success",
     announce: true,
   },
   declined: {
     label: "Declined",
-    icon: XCircle,
+    iconKey: "shield-x",
     tone: "danger",
     announce: true,
   },
   needs_clarification: {
     label: "Needs clarification",
-    icon: AlertTriangle,
+    iconKey: "alert-triangle",
     tone: "warning",
     announce: true,
   },
   cancelled: {
     label: "Cancelled",
-    icon: PauseCircle,
+    iconKey: "pause-circle",
     tone: "muted",
     announce: false,
   },
@@ -214,18 +320,28 @@ export const HANDOFF_STATUS: Record<HandoffStatus, StatusDescriptor> = {
 export const ARTIFACT_STATUS: Record<ArtifactStatus, StatusDescriptor> = {
   current: {
     label: "Current",
-    icon: CheckCircle2,
+    iconKey: "check-circle",
     tone: "success",
     announce: false,
   },
-  stale: { label: "Stale", icon: Clock, tone: "warning", announce: false },
+  stale: {
+    label: "Stale",
+    iconKey: "clock",
+    tone: "warning",
+    announce: false,
+  },
   superseded: {
     label: "Superseded",
-    icon: PauseCircle,
+    iconKey: "pause-circle",
     tone: "muted",
     announce: false,
   },
-  rejected: { label: "Rejected", icon: XCircle, tone: "danger", announce: false },
+  rejected: {
+    label: "Rejected",
+    iconKey: "x-circle",
+    tone: "danger",
+    announce: false,
+  },
 };
 
 // --- Memory status -----------------------------------------------------------
@@ -233,25 +349,25 @@ export const ARTIFACT_STATUS: Record<ArtifactStatus, StatusDescriptor> = {
 export const MEMORY_STATUS: Record<MemoryStatus, StatusDescriptor> = {
   proposed: {
     label: "Proposed",
-    icon: Clock,
+    iconKey: "clock",
     tone: "warning",
     announce: false,
   },
   active: {
     label: "Active",
-    icon: CheckCircle2,
+    iconKey: "check-circle",
     tone: "success",
     announce: false,
   },
   rejected: {
     label: "Rejected",
-    icon: XCircle,
+    iconKey: "x-circle",
     tone: "danger",
     announce: false,
   },
   archived: {
     label: "Archived",
-    icon: PauseCircle,
+    iconKey: "pause-circle",
     tone: "muted",
     announce: false,
   },
@@ -260,19 +376,39 @@ export const MEMORY_STATUS: Record<MemoryStatus, StatusDescriptor> = {
 // --- Message status ----------------------------------------------------------
 
 export const MESSAGE_STATUS: Record<MessageStatus, StatusDescriptor> = {
-  queued: { label: "Queued", icon: Hourglass, tone: "neutral", announce: false },
-  sending: { label: "Sending", icon: Loader2, tone: "info", announce: false },
-  running: { label: "Running", icon: Loader2, tone: "info", announce: true },
+  queued: {
+    label: "Queued",
+    iconKey: "hourglass",
+    tone: "neutral",
+    announce: false,
+  },
+  sending: {
+    label: "Sending",
+    iconKey: "loader",
+    tone: "info",
+    announce: false,
+  },
+  running: {
+    label: "Running",
+    iconKey: "loader",
+    tone: "info",
+    announce: true,
+  },
   succeeded: {
     label: "Sent",
-    icon: CheckCircle2,
+    iconKey: "check-circle",
     tone: "success",
     announce: true,
   },
-  failed: { label: "Failed", icon: XCircle, tone: "danger", announce: true },
+  failed: {
+    label: "Failed",
+    iconKey: "x-circle",
+    tone: "danger",
+    announce: true,
+  },
   cancelled: {
     label: "Cancelled",
-    icon: PauseCircle,
+    iconKey: "pause-circle",
     tone: "muted",
     announce: false,
   },

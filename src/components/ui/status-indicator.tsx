@@ -7,11 +7,19 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { transitions } from "@/lib/motion";
 
-import { getToneClasses, type StatusDescriptor } from "@/features/agents/status";
+import {
+  getToneClasses,
+  resolveStatusIcon,
+  type StatusDescriptor,
+} from "@/features/agents/status";
 
 /**
  * Renders one StatusDescriptor. Renders both icon and text so status is
  * conveyed by text + icon + tone — never color alone (WCAG 2.2 AA).
+ *
+ * Icon resolution happens here on the client via resolveStatusIcon(), so
+ * descriptors passed from server components can carry just an iconKey
+ * string instead of a LucideIcon function reference.
  *
  * Motion: the icon fades between descriptors so consecutive status
  * changes don't snap. The running-family descriptors get a subtle
@@ -30,7 +38,7 @@ function StatusIndicator({
   showIcon?: boolean;
 }) {
   const reduced = useReducedMotion();
-  const Icon = descriptor.icon;
+  const Icon = resolveStatusIcon(descriptor.iconKey);
   const isAnim =
     descriptor.label === "Running" ||
     descriptor.label === "Sending" ||
@@ -71,7 +79,7 @@ function StatusIndicator({
               </motion.span>
             ) : (
               <motion.span
-                key={`icon-${descriptor.label}`}
+                key={`icon-${descriptor.iconKey}-${descriptor.label}`}
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.85 }}
