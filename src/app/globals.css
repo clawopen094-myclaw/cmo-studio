@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+/* ============================================================================
+ * Marketing fonts — only loaded inside (marketing) route group via layout.
+ * App shell uses Inter loaded in src/app/app/layout.tsx.
+ * ============================================================================ */
+
+/* ============================================================================
+ * Marketing tokens — original Event Classics look.
+ * Lives outside .cmo-app so app tokens never collide.
+ * ============================================================================ */
+:root {
+  --marketing-bg: #0b0b0d;
+  --marketing-ink: #fafafa;
+}
+
+html, body {
+  background: var(--marketing-bg);
+  color: var(--marketing-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ============================================================================
+ * App shell tokens (.cmo-app). Mirrors ui-tokens.md. Dark-first, neutral.
+ * ============================================================================ */
+@theme inline {
+  --font-app: var(--font-inter);
+  --font-app-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+
+  --color-app-bg: var(--app-bg);
+  --color-app-surface: var(--app-surface);
+  --color-app-surface-subtle: var(--app-surface-subtle);
+  --color-app-surface-strong: var(--app-surface-strong);
+  --color-app-border: var(--app-border);
+  --color-app-border-strong: var(--app-border-strong);
+  --color-app-ink: var(--app-ink);
+  --color-app-ink-secondary: var(--app-ink-secondary);
+  --color-app-ink-muted: var(--app-ink-muted);
+  --color-app-primary: var(--app-primary);
+  --color-app-primary-hover: var(--app-primary-hover);
+  --color-app-primary-ink: var(--app-primary-ink);
+  --color-app-success: var(--app-success);
+  --color-app-success-soft: var(--app-success-soft);
+  --color-app-warning: var(--app-warning);
+  --color-app-warning-soft: var(--app-warning-soft);
+  --color-app-danger: var(--app-danger);
+  --color-app-danger-soft: var(--app-danger-soft);
+  --color-app-info: var(--app-info);
+  --color-app-info-soft: var(--app-info-soft);
+  --color-app-focus: var(--app-focus);
+}
+
+.cmo-app,
+.cmo-app[data-theme="dark"] {
+  color-scheme: dark;
+  --app-bg: #09090b;
+  --app-surface: #09090b;
+  --app-surface-subtle: #27272a;
+  --app-surface-strong: #3f3f46;
+  --app-border: #27272a;
+  --app-border-strong: #71717a;
+  --app-ink: #fafafa;
+  --app-ink-secondary: #d4d4d8;
+  --app-ink-muted: #a1a1aa;
+  --app-primary: #fafafa;
+  --app-primary-hover: #e4e4e7;
+  --app-primary-ink: #18181b;
+  --app-success: #4ade80;
+  --app-success-soft: #052e16;
+  --app-warning: #fbbf24;
+  --app-warning-soft: #451a03;
+  --app-danger: #f87171;
+  --app-danger-soft: #450a0a;
+  --app-info: #60a5fa;
+  --app-info-soft: #172554;
+  --app-focus: #fafafa;
+}
+
+.cmo-app[data-theme="light"] {
+  color-scheme: light;
+  --app-bg: #ffffff;
+  --app-surface: #ffffff;
+  --app-surface-subtle: #f4f4f5;
+  --app-surface-strong: #e4e4e7;
+  --app-border: #e4e4e7;
+  --app-border-strong: #888891;
+  --app-ink: #09090b;
+  --app-ink-secondary: #3f3f46;
+  --app-ink-muted: #6b6b74;
+  --app-primary: #18181b;
+  --app-primary-hover: #27272a;
+  --app-primary-ink: #fafafa;
+  --app-success: #15803d;
+  --app-success-soft: #dcfce7;
+  --app-warning: #92400e;
+  --app-warning-soft: #fef3c7;
+  --app-danger: #b91c1c;
+  --app-danger-soft: #fee2e2;
+  --app-info: #1d4ed8;
+  --app-info-soft: #dbeafe;
+  --app-focus: #18181b;
+}
+
+.cmo-app {
+  font-family: var(--font-app), ui-sans-serif, system-ui, sans-serif;
+  background: var(--app-bg);
+  color: var(--app-ink);
+  --background: var(--app-bg);
+  --foreground: var(--app-ink);
+  --card: var(--app-surface);
+  --card-foreground: var(--app-ink);
+  --popover: var(--app-surface);
+  --popover-foreground: var(--app-ink);
+  --primary: var(--app-primary);
+  --primary-foreground: var(--app-primary-ink);
+  --secondary: var(--app-surface-subtle);
+  --secondary-foreground: var(--app-ink);
+  --muted: var(--app-surface-subtle);
+  --muted-foreground: var(--app-ink-muted);
+  --accent: var(--app-surface-subtle);
+  --accent-foreground: var(--app-ink);
+  --destructive: var(--app-danger);
+  --border: var(--app-border);
+  --input: var(--app-border-strong);
+  --ring: var(--app-focus);
+  --sidebar: var(--app-bg);
+  --sidebar-foreground: var(--app-ink);
+  --sidebar-primary: var(--app-primary);
+  --sidebar-primary-foreground: var(--app-primary-ink);
+  --sidebar-accent: var(--app-surface-subtle);
+  --sidebar-accent-foreground: var(--app-ink);
+  --sidebar-border: var(--app-border);
+  --sidebar-ring: var(--app-focus);
+  --radius: 0.5rem;
+}
+
+/* Neutralize any inherited marketing blend/overflow behavior in app shell. */
+.cmo-app {
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.cmo-app *::selection {
+  background: var(--app-surface-strong);
+  color: var(--app-ink);
+}
+
+/* Focus ring used by primitives */
+.cmo-app :focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmo-app *,
+  .cmo-app *::before,
+  .cmo-app *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
