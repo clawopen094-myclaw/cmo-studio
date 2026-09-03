@@ -155,6 +155,28 @@ html, body {
   border-radius: 4px;
 }
 
+/* Refined scrollbar in the app shell. */
+.cmo-app ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.cmo-app ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cmo-app ::-webkit-scrollbar-thumb {
+  background: var(--app-surface-strong);
+  border-radius: 999px;
+  border: 2px solid var(--app-bg);
+}
+.cmo-app ::-webkit-scrollbar-thumb:hover {
+  background: var(--app-border-strong);
+}
+
+/* Smooth scroll for in-page anchors. */
+.cmo-app html {
+  scroll-behavior: smooth;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cmo-app *,
   .cmo-app *::before,

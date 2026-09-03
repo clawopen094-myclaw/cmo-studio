@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { useParams, usePathname } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
 import {
   Bot,
   Brain,
@@ -21,6 +22,7 @@ import {
 import { AGENT_ORDER } from "@/contracts/types";
 import { AGENT_CATALOG } from "@/server/catalog/agents";
 import { cn } from "@/lib/utils";
+import { transitions } from "@/lib/motion";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,11 +34,8 @@ import type { BrandWorkspace } from "@/contracts/types";
 /**
  * Application shell. 280px desktop sidebar, 56px top bar, mobile drawer.
  * Per ui-rules.md: desktop uses labelled sidebar (no dock), drawer on
- * narrow viewports. ThemeSelector + Simulation label live in the top bar.
- *
- * The shell reads the active workspaceId from useParams() so it stays in
- * sync with the URL on every navigation. The root /app layout renders this
- * shell exactly once; nested workspace layouts must NOT wrap with it again.
+ * narrow viewports. The sidebar's active row uses a layoutId-driven
+ * indicator that smoothly slides between selected rows.
  */
 
 const AGENT_ICONS: Record<string, React.ElementType> = {
@@ -57,6 +56,7 @@ interface AppShellProps {
 function AppShell({ children, workspaces, pendingCounts }: AppShellProps) {
   const pathname = usePathname() ?? "";
   const params = useParams<{ workspaceId?: string }>();
+  const reduced = useReducedMotion();
   const firstId = workspaces[0]?.id;
   const activeWorkspaceId = params.workspaceId ?? firstId ?? "";
   const active = workspaces.find((w) => w.id === activeWorkspaceId);
@@ -73,41 +73,133 @@ function AppShell({ children, workspaces, pendingCounts }: AppShellProps) {
           activeWorkspaceId={activeWorkspaceId}
           pendingApprovalCount={pendingApprovalCount}
           workspaceName={workspaceName}
+          reduced={Boolean(reduced)}
         />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-app-border bg-app-bg px-4">
-          <div className="flex min-w-0 items-center gap-2">
-            {/* Mobile menu trigger */}
-            <div className="lg:hidden">
-              <MobileNav
-                pathname={pathname}
-                workspaces={workspaces}
-                activeWorkspaceId={activeWorkspaceId}
-                pendingApprovalCount={pendingApprovalCount}
-                workspaceName={workspaceName}
-              />
-            </div>
-            <span className="text-sm text-app-ink-secondary">
-              <span className="text-app-ink-muted">Brand · </span>
-              {workspaceName}
-            </span>
-            <Badge variant="outline" className="ml-2 hidden sm:inline-flex">
-              Simulation
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="hidden sm:inline-flex">
-              Owner
-            </Badge>
-            <ThemeSelector />
-          </div>
-        </header>
+        <TopBar
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          pendingApprovalCount={pendingApprovalCount}
+          workspaceName={workspaceName}
+          pathname={pathname}
+        />
 
         <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
+  );
+}
+
+function TopBar({
+  workspaces,
+  activeWorkspaceId,
+  pendingApprovalCount,
+  workspaceName,
+  pathname,
+}: {
+  workspaces: BrandWorkspace[];
+  activeWorkspaceId: string;
+  pendingApprovalCount: number;
+  workspaceName: string;
+  pathname: string;
+}) {
+  return (
+    <header
+      className={cn(
+        "sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-app-border bg-app-bg/85 px-4 backdrop-blur-md",
+        "supports-[backdrop-filter]:bg-app-bg/70",
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        {/* Mobile menu trigger */}
+        <div className="lg:hidden">
+          <MobileNav
+            pathname={pathname}
+            workspaces={workspaces}
+            activeWorkspaceId={activeWorkspaceId}
+            pendingApprovalCount={pendingApprovalCount}
+            workspaceName={workspaceName}
+          />
+        </div>
+        <div className="flex min-w-0 items-baseline gap-1.5">
+          <span className="text-xs uppercase tracking-wider text-app-ink-muted">
+            Brand
+          </span>
+          <motion.span
+            key={workspaceName}
+            initial={{ opacity: 0, y: -2 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={transitions.fast}
+            className="truncate text-sm font-medium text-app-ink"
+          >
+            · {workspaceName}
+          </motion.span>
+        </div>
+        <Badge variant="outline" className="ml-2 hidden sm:inline-flex">
+          Simulation
+        </Badge>
+      </div>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="hidden sm:inline-flex">
+          Owner
+        </Badge>
+        <ThemeSelector />
+      </div>
+    </header>
+  );
+}
+
+interface SidebarRowProps {
+  href: Route | "";
+  isActive: boolean;
+  icon: React.ElementType;
+  label: string;
+  count?: number;
+  reducedMotion: boolean;
+}
+
+function SidebarRow({
+  href,
+  isActive,
+  icon: Icon,
+  label,
+  count,
+  reducedMotion,
+}: SidebarRowProps) {
+  return (
+    <Link
+      href={(href || "/") as Route}
+      aria-current={isActive ? "page" : undefined}
+      className={cn(
+        "relative flex h-10 items-center gap-2 rounded-md px-2 text-sm transition-colors duration-150",
+        isActive
+          ? "text-app-ink"
+          : "text-app-ink-secondary hover:text-app-ink",
+      )}
+    >
+      {isActive ? (
+        <motion.span
+          layoutId="sidebar-active-indicator"
+          transition={reducedMotion ? { duration: 0 } : transitions.medium}
+          className="absolute inset-0 -z-10 rounded-md bg-app-surface-subtle"
+        />
+      ) : null}
+      <Icon
+        aria-hidden
+        className={cn(
+          "size-4 transition-colors duration-150",
+          isActive ? "text-app-ink" : "text-app-ink-muted",
+        )}
+      />
+      <span className="flex-1 truncate">{label}</span>
+      {typeof count === "number" && count > 0 ? (
+        <Badge variant="outline" className="ml-auto">
+          {count}
+        </Badge>
+      ) : null}
+    </Link>
   );
 }
 
@@ -116,12 +208,14 @@ function SidebarContent({
   workspaces,
   activeWorkspaceId,
   pendingApprovalCount,
+  reduced,
 }: {
   pathname: string;
   workspaces: BrandWorkspace[];
   activeWorkspaceId: string;
   pendingApprovalCount: number;
   workspaceName: string;
+  reduced: boolean;
 }) {
   const workspaceId = activeWorkspaceId || workspaces[0]?.id || "";
 
@@ -129,7 +223,9 @@ function SidebarContent({
     <>
       <div className="flex h-14 items-center gap-2 border-b border-app-border px-4">
         <Megaphone aria-hidden className="size-4 text-app-ink" />
-        <span className="text-sm font-semibold text-app-ink">CMO Studio</span>
+        <span className="text-sm font-semibold tracking-tight text-app-ink">
+          CMO Studio
+        </span>
       </div>
 
       <div className="px-3 pt-3">
@@ -155,18 +251,13 @@ function SidebarContent({
               workspaceId !== "" && pathname.startsWith(href);
             return (
               <li key={key}>
-                <Link
+                <SidebarRow
                   href={href}
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    "flex h-10 items-center gap-2 rounded-md px-2 text-sm text-app-ink hover:bg-app-surface-subtle",
-                    isActive &&
-                      "bg-app-surface-subtle text-app-ink [&_svg]:text-app-ink",
-                  )}
-                >
-                  <Icon aria-hidden className="size-4 text-app-ink-muted" />
-                  <span className="flex-1 truncate">{def.displayName}</span>
-                </Link>
+                  isActive={isActive}
+                  icon={Icon}
+                  label={def.displayName}
+                  reducedMotion={reduced}
+                />
               </li>
             );
           })}
@@ -177,84 +268,53 @@ function SidebarContent({
         </p>
         <ul className="flex flex-col gap-0.5">
           <li>
-            <Link
+            <SidebarRow
               href={
                 workspaceId === ""
                   ? ("/" as Route)
                   : (`/app/${workspaceId}/campaigns` as Route)
               }
-              aria-current={
+              isActive={
                 workspaceId !== "" &&
                 pathname.startsWith(`/app/${workspaceId}/campaigns`)
-                  ? "page"
-                  : undefined
               }
-              className={cn(
-                "flex h-10 items-center gap-2 rounded-md px-2 text-sm text-app-ink hover:bg-app-surface-subtle",
-                workspaceId !== "" &&
-                  pathname.startsWith(`/app/${workspaceId}/campaigns`) &&
-                  "bg-app-surface-subtle text-app-ink",
-              )}
-            >
-              <Megaphone aria-hidden className="size-4 text-app-ink-muted" />
-              <span className="flex-1 truncate">Campaigns</span>
-              {pendingApprovalCount > 0 ? (
-                <Badge variant="outline" className="ml-auto">
-                  {pendingApprovalCount}
-                </Badge>
-              ) : null}
-            </Link>
+              icon={Megaphone}
+              label="Campaigns"
+              count={pendingApprovalCount > 0 ? pendingApprovalCount : undefined}
+              reducedMotion={reduced}
+            />
           </li>
           <li>
-            <Link
+            <SidebarRow
               href={
                 workspaceId === ""
                   ? ("/" as Route)
                   : (`/app/${workspaceId}/memory` as Route)
               }
-              aria-current={
+              isActive={
                 workspaceId !== "" &&
                 pathname.startsWith(`/app/${workspaceId}/memory`)
-                  ? "page"
-                  : undefined
               }
-              className={cn(
-                "flex h-10 items-center gap-2 rounded-md px-2 text-sm text-app-ink hover:bg-app-surface-subtle",
-                workspaceId !== "" &&
-                  pathname.startsWith(`/app/${workspaceId}/memory`) &&
-                  "bg-app-surface-subtle text-app-ink",
-              )}
-            >
-              <Brain aria-hidden className="size-4 text-app-ink-muted" />
-              <span className="flex-1 truncate">Memory</span>
-            </Link>
+              icon={Brain}
+              label="Memory"
+              reducedMotion={reduced}
+            />
           </li>
           <li>
-            <Link
+            <SidebarRow
               href={
                 workspaceId === ""
                   ? ("/" as Route)
                   : (`/app/${workspaceId}/settings` as Route)
               }
-              aria-current={
+              isActive={
                 workspaceId !== "" &&
                 pathname.startsWith(`/app/${workspaceId}/settings`)
-                  ? "page"
-                  : undefined
               }
-              className={cn(
-                "flex h-10 items-center gap-2 rounded-md px-2 text-sm text-app-ink hover:bg-app-surface-subtle",
-                workspaceId !== "" &&
-                  pathname.startsWith(`/app/${workspaceId}/settings`) &&
-                  "bg-app-surface-subtle text-app-ink",
-              )}
-            >
-              <SettingsIcon
-                aria-hidden
-                className="size-4 text-app-ink-muted"
-              />
-              <span className="flex-1 truncate">Brand settings</span>
-            </Link>
+              icon={SettingsIcon}
+              label="Brand settings"
+              reducedMotion={reduced}
+            />
           </li>
         </ul>
       </nav>
@@ -301,10 +361,16 @@ function MobileNav({
           <button
             type="button"
             aria-label="Close navigation"
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 animate-[fadeIn_150ms_ease-out] bg-black/60 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
-          <aside className="relative flex h-full w-[280px] flex-col border-r border-app-border bg-app-bg shadow-2xl">
+          <motion.aside
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={transitions.medium}
+            className="relative flex h-full w-[280px] flex-col border-r border-app-border bg-app-bg shadow-2xl"
+          >
             <div className="flex h-14 items-center justify-end border-b border-app-border px-3">
               <Button
                 variant="ghost"
@@ -321,8 +387,9 @@ function MobileNav({
               activeWorkspaceId={activeWorkspaceId}
               pendingApprovalCount={pendingApprovalCount}
               workspaceName={workspaceName}
+              reduced={false}
             />
-          </aside>
+          </motion.aside>
         </div>
       ) : null}
     </>

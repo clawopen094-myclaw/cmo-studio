@@ -1,14 +1,23 @@
+"use client";
+
+import * as React from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { ArrowRight } from "lucide-react";
+
 import type { CampaignTask, Id } from "@/contracts/types";
 import { TASK_AGENT_MAP, FIXED_UGC_WORKFLOW } from "@/server/catalog/agents";
 import { TASK_STATUS } from "@/features/agents/status";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { Badge } from "@/components/ui/badge";
+import { transitions } from "@/lib/motion";
 
 /**
  * Fixed ordered task flow. Parallel research and strategy are presented
- * side by side on wide layouts; logical DOM order is preserved. Per
- * ui-rules.md: explicit "Blocked by …" text accompanies the visual
- * connectors — never connector-only communication.
+ * sequentially here; logical DOM order is preserved. Per ui-rules.md:
+ * explicit "Blocked by …" text accompanies the visual connectors — never
+ * connector-only communication.
+ *
+ * Motion: each task card reveals in sequence when the page mounts.
  */
 function CampaignTaskFlow({
   tasks,
@@ -16,6 +25,7 @@ function CampaignTaskFlow({
   tasks: CampaignTask[];
   workspaceId?: Id;
 }) {
+  const reduced = useReducedMotion();
   const byKey = new Map<string, CampaignTask[]>();
   for (const t of tasks) {
     const arr = byKey.get(t.templateTaskKey) ?? [];
@@ -26,8 +36,8 @@ function CampaignTaskFlow({
   const sequence = FIXED_UGC_WORKFLOW.taskSequence;
 
   return (
-    <ol className="flex flex-col gap-3">
-      {sequence.map((key) => {
+    <ol className="flex flex-col gap-2">
+      {sequence.map((key, idx) => {
         const variants = byKey.get(key) ?? [];
         const current =
           variants.find((t) => t.isCurrent && t.status !== "completed") ??
@@ -35,12 +45,18 @@ function CampaignTaskFlow({
           variants[0];
         if (!current) {
           return (
-            <li
+            <motion.li
               key={key}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                ...transitions.medium,
+                delay: reduced ? 0 : idx * 0.05,
+              }}
               className="rounded-md border border-dashed border-app-border p-3 text-sm text-app-ink-muted"
             >
               {labelFor(key)} not started.
-            </li>
+            </motion.li>
           );
         }
         const blockedByNames = current.dependsOnTaskIds
@@ -54,9 +70,15 @@ function CampaignTaskFlow({
           );
 
         return (
-          <li
-            key={key}
-            className="rounded-md border border-app-border p-3"
+          <motion.li
+            key={`${key}-${current.revisionIndex}`}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              ...transitions.medium,
+              delay: reduced ? 0 : idx * 0.05,
+            }}
+            className="relative rounded-md border border-app-border bg-app-surface/60 p-3 transition-colors duration-150 hover:bg-app-surface"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -73,7 +95,8 @@ function CampaignTaskFlow({
               </p>
             ) : null}
             {current.status === "pending" && blockedByNames.length > 0 ? (
-              <p className="mt-2 text-xs text-app-ink-muted">
+              <p className="mt-2 inline-flex items-center gap-1 text-xs text-app-ink-muted">
+                <ArrowRight aria-hidden className="size-3" />
                 Blocked by {joinNames(blockedByNames)}.
               </p>
             ) : null}
@@ -82,7 +105,7 @@ function CampaignTaskFlow({
                 Revision {current.revisionIndex + 1} of {variants.length}.
               </p>
             ) : null}
-          </li>
+          </motion.li>
         );
       })}
     </ol>

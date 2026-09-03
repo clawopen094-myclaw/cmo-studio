@@ -1,21 +1,50 @@
+"use client";
+
 import * as React from "react";
+import { motion, useReducedMotion } from "motion/react";
 
 import { cn } from "@/lib/utils";
+import { transitions } from "@/lib/motion";
 
 /**
- * Card primitive. Flat by default; semantic composition only. Status and
+ * Card primitive. Flat by default; semantic semantic only. Status and
  * agent identity never change card appearance — domain color belongs in
  * typed status descriptors, not in Card.
+ *
+ * Motion: subtle border/bg shift on interactive cards. Lifts only on
+ * explicit `interactive` prop so static containers stay still.
  */
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+
+type CardProps = React.ComponentProps<"div"> & {
+  interactive?: boolean;
+};
+
+function Card({ className, interactive = false, ...props }: CardProps) {
+  const reduced = useReducedMotion();
+  if (!interactive) {
+    return (
+      <div
+        data-slot="card"
+        className={cn(
+          "flex flex-col gap-4 rounded-lg border border-app-border bg-app-surface p-6 transition-colors duration-150",
+          className,
+        )}
+        {...props}
+      />
+    );
+  }
   return (
-    <div
+    <motion.div
       data-slot="card"
+      data-interactive
       className={cn(
-        "flex flex-col gap-4 rounded-lg border border-app-border bg-app-surface p-6",
+        "flex cursor-pointer flex-col gap-4 rounded-lg border border-app-border bg-app-surface p-6 transition-colors duration-150 hover:border-app-border-strong hover:bg-app-surface/95 hover:shadow-[0_4px_16px_-8px_rgba(0,0,0,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-app-focus",
         className,
       )}
-      {...props}
+      whileHover={reduced ? undefined : { y: -2 }}
+      whileTap={reduced ? undefined : { y: 0 }}
+      transition={transitions.fast}
+      {...(props as unknown as React.ComponentProps<typeof motion.div>)}
     />
   );
 }

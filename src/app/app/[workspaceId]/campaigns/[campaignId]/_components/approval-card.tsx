@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, AlertTriangle } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { CheckCircle2, MessageSquareWarning, ShieldCheck } from "lucide-react";
 
 import type { ApprovalRequest, Id } from "@/contracts/types";
 import { APPROVAL_STATUS } from "@/features/agents/status";
@@ -14,11 +15,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
 import { resolveApprovalAction } from "@/server/mock-runtime/store";
 import { listArtifactsForWorkspace } from "@/server/mock-runtime/store";
+import { transitions } from "@/lib/motion";
 
 /**
  * Pre-production approval card. Lists the exact script/storyboard versions
  * being reviewed. Manual: Approve / Request changes (feedback required).
  * Auto: read-only history. Subject artifacts remain inspectable.
+ *
+ * Motion: the request-changes feedback panel slides in/out. The approve
+ * button confirms with a brief check-mark morph.
  */
 function ApprovalCard({
   approval,
@@ -28,11 +33,13 @@ function ApprovalCard({
   workspaceId: Id;
 }) {
   const router = useRouter();
+  const reduced = useReducedMotion();
   const [decisionMode, setDecisionMode] = React.useState<
     "idle" | "approve" | "changes"
   >("idle");
   const [feedback, setFeedback] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [justApproved, setJustApproved] = React.useState(false);
 
   const artifacts = listArtifactsForWorkspace(workspaceId);
   const subjects = approval.subjects
@@ -54,6 +61,10 @@ function ApprovalCard({
         feedback: outcome === "changes_requested" ? feedback.trim() : undefined,
       });
       setDecisionMode("idle");
+      if (outcome === "approved") {
+        setJustApproved(true);
+        setTimeout(() => setJustApproved(false), 1400);
+      }
       router.refresh();
     } finally {
       setSubmitting(false);
@@ -76,8 +87,11 @@ function ApprovalCard({
       <CardContent className="flex flex-col gap-4">
         <ul className="flex flex-col gap-2">
           {subjects.map((s) => (
-            <li
+            <motion.li
               key={s.artifactId}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={reduced ? { duration: 0 } : transitions.fast}
               className="flex items-center justify-between gap-3 rounded-md border border-app-border p-3"
             >
               <div className="flex flex-col gap-0.5">
@@ -92,62 +106,103 @@ function ApprovalCard({
                 </span>
               </div>
               <ShieldCheck aria-hidden className="size-4 text-app-success" />
-            </li>
+            </motion.li>
           ))}
         </ul>
 
         {approval.status === "pending" ? (
-          decisionMode === "idle" ? (
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setDecisionMode("changes")}
+          <AnimatePresence mode="wait" initial={false}>
+            {decisionMode === "idle" ? (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={reduced ? { duration: 0 } : transitions.fast}
+                className="flex flex-wrap items-center justify-end gap-2"
               >
-                Request changes
-              </Button>
-              <Button variant="default" onClick={() => decide("approved")}>
-                Approve current versions
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 rounded-md border border-app-border p-3">
-              <FormField
-                label="Feedback"
-                required
-                description="What should change before production?"
-              >
-                <Textarea
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  rows={3}
-                  placeholder="Tighten the CTA timing; flag the urgency wording in hook A."
-                />
-              </FormField>
-              <div className="flex items-center justify-end gap-2">
                 <Button
-                  variant="ghost"
-                  onClick={() => setDecisionMode("idle")}
-                  disabled={submitting}
+                  variant="outline"
+                  onClick={() => setDecisionMode("changes")}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => decide("changes_requested")}
-                  disabled={!feedback.trim() || submitting}
-                >
+                  <MessageSquareWarning
+                    aria-hidden
+                    className="size-4"
+                  />
                   Request changes
                 </Button>
-              </div>
-            </div>
-          )
-        ) : null}
-
-        {approval.status === "superseded" ? (
-          <p className="inline-flex items-center gap-1 text-xs text-app-ink-muted">
-            <AlertTriangle aria-hidden className="size-3" />
-            Superseded by a later creative-package version.
-          </p>
+                <Button variant="default" onClick={() => decide("approved")}>
+                  <AnimatePresence mode="wait" initial={false}>
+                    {justApproved ? (
+                      <motion.span
+                        key="check"
+                        initial={{ opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.6 }}
+                        transition={reduced ? { duration: 0 } : transitions.fast}
+                        className="inline-flex"
+                      >
+                        <CheckCircle2 aria-hidden className="size-4" />
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="shield"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={reduced ? { duration: 0 } : transitions.fast}
+                        className="inline-flex"
+                      >
+                        <ShieldCheck aria-hidden className="size-4" />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  {justApproved ? "Approved" : "Approve current versions"}
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="changes"
+                initial={{ opacity: 0, y: 4, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -4, height: 0 }}
+                transition={reduced ? { duration: 0 } : transitions.medium}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-col gap-3 rounded-md border border-app-warning/40 bg-app-warning-soft/30 p-3">
+                  <FormField
+                    label="Feedback"
+                    required
+                    description="What should change before production?"
+                  >
+                    <Textarea
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                      rows={3}
+                      placeholder="Tighten the CTA timing; flag the urgency wording in hook A."
+                      autoFocus
+                    />
+                  </FormField>
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setDecisionMode("idle")}
+                      disabled={submitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => decide("changes_requested")}
+                      disabled={!feedback.trim() || submitting}
+                    >
+                      Request changes
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         ) : null}
       </CardContent>
     </Card>
